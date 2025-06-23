@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+
+
+     <link rel="stylesheet" href="layot.css">
+
+    <title>Catálogo de Produtos com Menu de Cadastro</title>
+    <style>
+        .produto {
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 10px;
+            width: 200px;
+            text-align: center;
+            float: left;
+        }
+        .produto img {
+            max-width: 100%;
+            height: auto;
+        }
+        #carrinho {
+            clear: both;
+            margin-top: 30px;
+        }
+        button {
+            padding: 5px 10px;
+            margin-top: 5px;
+            cursor: pointer;
+        }
+        #menu {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Menu -->
+    <div id="menu">
+        <button onclick="mostrarCatalogo()">Catálogo</button>
+        <button onclick="mostrarCadastro()">Meu Cadastro (Editar Produtos)</button>
+    </div>
+
+    <!-- Seções -->
+    <div id="areaCatalogo"></div>
+    <div id="areaCadastro" style="display:none;">
+        <h2>Cadastro / Edição de Produtos</h2>
+        <form onsubmit="salvarProduto(event)">
+            <input type="hidden" id="produtoId">
+            Nome: <input type="text" id="nome"><br>
+            Preço: <input type="number" id="preco" step="0.01"><br>
+            Quantidade: <input type="number" id="quantidade"><br>
+            Imagem URL: <input type="text" id="imagem"><br>
+            <button type="submit">Salvar Produto</button>
+        </form>
+
+        <h3>Produtos Cadastrados:</h3>
+        <ul id="listaProdutos"></ul>
+    </div>
+
+    <h2>Carrinho de Compras</h2>
+    <ul id="carrinho"></ul>
+    <button onclick="finalizarCompra()">Finalizar Compra</button>
+
+    <script>
+        let produtos = [
+            { id: 1, nome: "Camiseta", preco: 29.90, quantidade: 10, imagem: "https://via.placeholder.com/150" },
+            { id: 2, nome: "Calça", preco: 89.90, quantidade: 5, imagem: "https://via.placeholder.com/150" }
+        ];
+        let carrinho = [];
+
+        function mostrarCatalogo() {
+            document.getElementById('areaCatalogo').style.display = 'block';
+            document.getElementById('areaCadastro').style.display = 'none';
+            exibirCatalogo();
+        }
+
+        function mostrarCadastro() {
+            document.getElementById('areaCatalogo').style.display = 'none';
+            document.getElementById('areaCadastro').style.display = 'block';
+            listarProdutosParaEdicao();
+        }
+
+        function exibirCatalogo() {
+            const area = document.getElementById('areaCatalogo');
+            area.innerHTML = '';
+
+            produtos.forEach(produto => {
+                const div = document.createElement('div');
+                div.classList.add('produto');
+                div.innerHTML = `
+                    <img src="${produto.imagem}" alt="${produto.nome}">
+                    <h3>${produto.nome}</h3>
+                    <p>Preço: R$ ${produto.preco.toFixed(2)}</p>
+                    <p>Estoque: ${produto.quantidade}</p>
+                    <button onclick="adicionarAoCarrinho(${produto.id})">Adicionar ao Carrinho</button>
+                `;
+                area.appendChild(div);
+            });
+        }
+
+        function adicionarAoCarrinho(id) {
+            const produto = produtos.find(p => p.id === id);
+            if (produto && produto.quantidade > 0) {
+                carrinho.push({ nome: produto.nome, preco: produto.preco });
+                produto.quantidade--;
+                exibirCatalogo();
+                atualizarCarrinho();
+            } else {
+                alert('Produto sem estoque!');
+            }
+        }
+
+        function atualizarCarrinho() {
+            const ul = document.getElementById('carrinho');
+            ul.innerHTML = '';
+            carrinho.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = `${item.nome} - R$ ${item.preco.toFixed(2)}`;
+                ul.appendChild(li);
+            });
+        }
+
+        function finalizarCompra() {
+            if (carrinho.length === 0) {
+                alert('Carrinho vazio!');
+                return;
+            }
+            let total = carrinho.reduce((soma, item) => soma + item.preco, 0);
+            alert(`Total da compra: R$ ${total.toFixed(2)}`);
+            carrinho = [];
+            atualizarCarrinho();
+        }
+
+        // CRUD Produtos
+        function listarProdutosParaEdicao() {
+            const ul = document.getElementById('listaProdutos');
+            ul.innerHTML = '';
+            produtos.forEach(produto => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    ${produto.nome} - R$${produto.preco.toFixed(2)} - Estoque: ${produto.quantidade}
+                    <button onclick="editarProduto(${produto.id})">Editar</button>
+                `;
+                ul.appendChild(li);
+            });
+        }
+
+        function editarProduto(id) {
+            const produto = produtos.find(p => p.id === id);
+            if (produto) {
+                document.getElementById('produtoId').value = produto.id;
+                document.getElementById('nome').value = produto.nome;
+                document.getElementById('preco').value = produto.preco;
+                document.getElementById('quantidade').value = produto.quantidade;
+                document.getElementById('imagem').value = produto.imagem;
+            }
+        }
+
+        function salvarProduto(event) {
+            event.preventDefault();
+            const id = parseInt(document.getElementById('produtoId').value);
+            const nome = document.getElementById('nome').value;
+            const preco = parseFloat(document.getElementById('preco').value);
+            const quantidade = parseInt(document.getElementById('quantidade').value);
+            const imagem = document.getElementById('imagem').value;
+
+            if (id) {
+                // Editar produto
+                const produto = produtos.find(p => p.id === id);
+                if (produto) {
+                    produto.nome = nome;
+                    produto.preco = preco;
+                    produto.quantidade = quantidade;
+                    produto.imagem = imagem;
+                }
+            } else {
+                // Novo produto
+                const novoId = produtos.length ? produtos[produtos.length - 1].id + 1 : 1;
+                produtos.push({ id: novoId, nome, preco, quantidade, imagem });
+            }
+
+            document.getElementById('produtoId').value = '';
+            document.getElementById('nome').value = '';
+            document.getElementById('preco').value = '';
+            document.getElementById('quantidade').value = '';
+            document.getElementById('imagem').value = '';
+
+            listarProdutosParaEdicao();
+            exibirCatalogo();
+        }
+
+        mostrarCatalogo();
+    </script>
+
+</body>
+</html>
